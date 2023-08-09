@@ -1,0 +1,101 @@
+---
+title: "Activity 2"
+output: github_document
+---
+
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load required packages
+library(tidyverse)
+library(tidymodels)
+library(readxl)
+
+```
+
+```{r}
+
+# Load your dataset (replace 'file.csv' with your file's name)
+scores <- read_excel("scores.xlsx")
+View(scores)
+dim(scores)
+
+# Specify the two variables of interest
+x_variable <- "Hours"
+y_variable <- "Scores"
+
+```
+
+**Description of Data**:
++ The dataset contains scores and hours as variables.
++ This dataset is interesting as we want to explore the relationship between hours studied and scores obtained.
++ The dataset was obtained from an educational institution's records.
++ The dataset was created by the educational institution.
+
+
+```{r}
+
+# Plot each variable separately using histograms
+ggplot(scores, aes(x = Hours)) +
+  geom_histogram(binwidth = 1, fill = "blue", alpha = 0.5) +
+  labs(title = "Distribution of Hours Studied")
+
+ggplot(scores, aes(x = Scores)) +
+  geom_histogram(binwidth = 5, fill = "green", alpha = 0.5) +
+  labs(title = "Distribution of Scores Obtained")
+
+# Plot variables together using a scatter plot
+ggplot(scores, aes(x = Hours, y = Scores)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Scores vs. Hours Studied")
+
+
+```
+
+
+
+```{r}
+
+# Install and load 'statsr' package
+if (!requireNamespace("statsr", quietly = TRUE)) {
+  install.packages("statsr")
+}
+library(statsr)
+
+# Run the plot_ss function to visualize sum of squared residuals
+plot_ss(x = Hours, y = Scores, data = scores)
+
+# Answer the questions based on the visualizations
+# 5. Smallest sum of squares and relationship with data points.
+
+
+# 6. Largest sum of squares and relationship with data points.
+
+
+
+```
+
+
+```{r}
+
+# Create a parsnip specification for a linear model
+lm_spec <- linear_reg() %>%
+  set_mode("regression") %>%
+  set_engine("lm")
+
+# Fit the linear model to the data
+slr_mod <- lm_spec %>% 
+  fit(as.formula(paste('Scores', "~", 'Hours')), data = scores)
+
+# View the model output
+tidy(slr_mod)
+
+
+
+
+
+```
+
+
