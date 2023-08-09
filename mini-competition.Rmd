@@ -1,0 +1,198 @@
+---
+title: "Activity 8 - Mini-competition - Pep Canyadell"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load required libraries and set up global options
+library(dplyr)
+library(ggplot2)
+library(caTools)
+library(readr)
+options(warn = -1)  # Suppress warnings
+
+```
+
+```{r}
+
+
+inventory <- read_csv("inventory.csv")
+raw_data <- inventory
+View(inventory)
+
+```
+
+
+```{r}
+
+# Convert week data by month for easier interpretation
+data_month <- raw_data %>%
+  mutate(
+    Month = case_when(
+      week <= 4 ~ 'July',
+      week > 4 & week <= 8 ~ 'August',
+      week > 8 & week <= 12 ~ 'September',
+      week > 12 & week <= 16 ~ 'October',
+      week > 16 & week <= 20 ~ 'November',
+      week > 20 & week <= 24 ~ 'December',
+      week > 24 & week <= 28 ~ 'January',
+      week > 28 & week <= 32 ~ 'February',
+      week > 32 & week <= 37 ~ 'March',
+      week > 37 & week <= 41 ~ 'April',
+      week > 41 & week <= 45 ~ 'May',
+      week > 45 & week <= 50 ~ 'June',
+      week > 50 & week <= 53 ~ 'July2'
+    )
+  )
+
+# Define the order of months for plotting
+month_order <- c(
+  "July", "August", "September", "October", "November", "December",
+  "January", "February", "March", "April", "May", "June", "July2"
+)
+
+# Convert Month and item_no to factors with predefined levels
+data_month$Month <- factor(data_month$Month, levels = month_order)
+data_month$item_no <- factor(data_month$item_no)
+
+# Add binary info for sold data
+data_month_bi <- data_month %>%
+  mutate(sold_binary = ifelse(sold > 0, 1, 0))
+
+
+```
+
+
+```{r}
+
+# Plot overall trends across time using ggplot
+ggplot(data = data_month, aes(x = Month,
+                              y = sold,
+                              color = item_no,
+                              fill = item_no)) +
+  geom_col() +
+  theme_bw() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none"
+  )
+
+
+```
+
+```{r}
+
+# Display a summary of the binary data
+summary(data_month_bi)
+
+
+```
+
+```{r}
+
+# Split data into training and test sets
+set.seed(123)
+split_data <- sample.split(data_month_bi$sold_binary, SplitRatio = 0.7)
+test_data <- subset(data_month_bi, split_data == FALSE)
+train_data <- subset(data_month_bi, split_data == TRUE)
+
+
+```
+
+
+```{r}
+
+# Build a logistic regression model
+fit <- glm(sold_binary ~ Month + item_no, data = train_data, family = binomial())
+
+# Display the summary of the model
+summary(fit)
+
+
+```
+
+
+```{r}
+
+# Make predictions on the test data
+test_data$prob <- predict(fit, test_data, type = "response")
+test_data$pred <- ifelse(test_data$prob > 0.75, 1, 0)
+
+
+```
+
+```{r}
+
+# Calculate the accuracy of the model
+accuracy <- mean(test_data$pred == test_data$sold_binary)
+
+# Display the accuracy
+accuracy
+
+
+```
+
+```{r}
+
+# Plot density of predicted values for each item across time
+ggplot(
+  subset(test_data, pred == 1),
+  aes(x = Month, group = item_no, color = item_no)) +
+  geom_density() +
+  facet_wrap(~item_no) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none")
+
+
+```
+
+```{r}
+
+# Plot bar chart of predicted values for each month
+ggplot(
+  subset(test_data, pred == 1),
+  aes(x = Month, fill = Month)) +
+  geom_bar(colour = "black") +
+  facet_wrap(~item_no) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none")
+
+
+```
+
+
+
+# Project Description:
+
+Our task for the project was to predict future inventory needs for various products using the dataset inventory. Our goal was to create predictive models for each unique product to forecast the number of items sold in future weeks. 
+We wanted to identify the fast and slow month trends in sales. And we found out that the highest gross sales are in March and the lowest gross sales are in December
+Also, we wanted to determine if one product is dominating over others
+
+In order to complete those tasks we did the following:
+First, we converted weekly product sales into months: we put 4 weeks together. 
+Second, we adapted the values into sold and not sold
+In order to predict the future inventory, we trained and tested the model. We used last year’s inventory and we split the data 70:30 for training and testing
+Some findings are the following:
+DUirng December and June from one year ago, we had a decrease in sales of over 27.2% and 24.7 respectively. 
+Product sales ranged from a decrease of 90% (CP6-A-8-26-D) to an increase of sales by 184% (MX40-STD-16201)
+
+The code produces a grouped bar plot with separate panels for each unique item number (item_no). The bars represent the counts of rows in the test_data$pred data frame where the predicted probability (prob) is greater than 0.75.
+It's representing sales for each product that was predicted with a 75% confidence
+As we can see in the graphs, the ones that are circled are the ones that have consistent sales throughout the year. 
+The one that is circled in green shows the spike in August sales. 
+There is a 75% confidence in predictive product sales. 
+
+What are the next steps?
+We would look into further model development. Our model is predicting with 77% accuracy after comparing the trained and the test data. 
+In order to be able to provide the best service for our customers, we need to ensure that specific products are stocked before high sales months and to continue to stock products with consistent sales over time
+It is important to keep improving our accuracy to keep track of and record stock levels for each product over time for future analysis. 
+
+
+
+
+
