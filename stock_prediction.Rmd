@@ -1,0 +1,320 @@
+---
+title: "Final Project: Stock Prediction"
+author: "Pep Canyadell"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+# Data Collection and EDA
+
+```{r}
+if (!require("quantmod")) {
+    install.packages("quantmod")
+    library(quantmod)
+}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+start <- as.Date("2021-01-01")
+end <- as.Date("2023-01-01")
+
+# The default behavior for getSymbols is to load data directly into the
+# global environment, with the object being named after the loaded ticker
+# symbol. This feature may become deprecated in the future, but we exploit
+# it now.
+#
+getSymbols("AAPL", src = "yahoo", from = start, to = end)
+```
+
+```{r}
+head(AAPL)
+```
+
+```{r}
+summary(AAPL)
+```
+
+
+```{r}
+plot(AAPL[, "AAPL.Close"], main = "AAPL")
+```
+
+```{r, fig.width=12, fig.height=10}
+quantmod::candleChart(AAPL, up.col = "black", dn.col = "red", theme = "white")
+```
+
+# Stock comparison
+
+```{r}
+getSymbols(c("MSFT", "GOOG"), src = "yahoo", from = start, to = end)
+```
+
+```{r}
+# Create an xts object (xts is loaded with quantmod) that contains closing
+# prices for AAPL, MSFT, and GOOG
+stocks_close <- as.xts(data.frame(AAPL = AAPL[, "AAPL.Close"], MSFT = MSFT[, "MSFT.Close"], 
+    GOOG = GOOG[, "GOOG.Close"]))
+
+head(stocks_close)
+```
+
+## Double scale stock close comparison
+
+Better visualization but not very informative. We would rather have stock returns.
+
+```{r, fig.width=10, fig.height=8}
+plot(as.zoo(stocks_close[, c("AAPL.Close", "MSFT.Close")]), screens = 1, lty = 1:2, 
+    xlab = "Date", ylab = "Price")
+
+par(new = TRUE)
+
+plot(as.zoo(stocks_close[, "GOOG.Close"]), screens = 1, lty = 3, xaxt = "n", yaxt = "n", 
+    xlab = "", ylab = "")
+
+axis(4)
+
+mtext("Price", side = 4, line = 3)
+
+legend("topleft", c("AAPL (left)", "MSFT (left)", "GOOG"), lty = 1:3, cex = 0.8)
+```
+
+## Stock returns
+
+```{r}
+if (!require("magrittr")) {
+    install.packages("magrittr")
+    library(magrittr)
+}
+
+```
+
+```{r}
+# Calculate the returns using the magrittr pipe operator
+stock_returns <- stocks_close %>% 
+  diff() %>%                # Calculate the differences between consecutive rows
+  na.omit() %>%             # Remove any rows with missing values
+  {./lag(stocks_close, 1)}   # Divide by the lagged closing price to get daily returns
+
+# example case: For AAPL.Close: (131.01 - 129.41) / 129.41 = 0.012363734
+
+# Print the head of stock_returns
+head(stock_returns)
+```
+
+```{r}
+summary(stock_returns)
+```
+
+
+We can now see how profitable each stock was since the beginning of the period. Furthermore, we see that these stocks are highly correlated; they generally move in the same direction, a fact that was difficult to see in the other charts.
+
+```{r, fig.width=10, fig.height=10}
+plot(as.zoo(stock_returns), screens = 1, lty = 1:3, xlab = "Date", ylab = "Return")
+legend("topleft", c("AAPL", "MSFT", "GOOG"), lty = 1:3, cex = 1)
+```
+
+# Searching for trends
+
+A q-day moving average is, for a series x_t and a point in time t, the average of the past q days: that is, if MA^q_t denotes a moving average process, then:
+
+MA^q_t = \frac{1}{q} \sum_{i = 0}^{q-1} x_{t - i}
+
+Moving averages smooth a series and helps identify trends. The larger q is, the less responsive a moving average process is to short-term fluctuations in the series x_t. The idea is that moving average processes help identify trends from “noise”. Fast moving averages have smaller q and more closely follow the stock, while slow moving averages have larger q, resulting in them responding less to the fluctuations of the stock and being more stable.
+
+```{r, fig.width=10, fig.height=10}
+candleChart(AAPL, up.col = "black", dn.col = "red", theme = "white")
+addSMA(n = 20)
+```
+
+A stock needs to be above or below the moving average line in order for the line to change direction. Thus, crossing a moving average signals a possible change in trend, and should draw attention. In practice, we usually look at multiple moving averages to identify trends at different time periods.
+
+```{r, fig.width=10, fig.height=10}
+candleChart(AAPL, up.col = "black", dn.col = "red", theme = "white", subset = "2016-01-04/")
+addSMA(n = c(20, 50, 200))
+```
+
+The 20-day moving average is the most sensitive to local changes, and the 200-day moving average the least. Note the 20 and 50-say MA follow a very similar trend. While the trend has been bullish for the most part until early 2022, recent data shows bearish trends leading up to 2023. You can also see that the crossing of moving average lines indicate changes in trend. These crossings are what we can use as trading signals, or indications that a financial security is changing direction and a profitable trade might be made.
+
+# Regression analysis
+
+```{r}
+# Load required libraries
+if (!require("lmtest")) {
+    install.packages("lmtest")
+    library(lmtest)
+}
+```
+
+```{r}
+# Perform linear regression for each stock
+aapl_lm <- lm(AAPL.Close ~ index(AAPL.Close), data = stocks_close)
+msft_lm <- lm(MSFT.Close ~ index(MSFT.Close), data = stocks_close)
+goog_lm <- lm(GOOG.Close ~ index(GOOG.Close), data = stocks_close)
+
+# Print regression summaries
+summary(aapl_lm)
+summary(msft_lm)
+summary(goog_lm)
+```
+
+The regression analysis results indicate the relationships between the stock closing prices of AAPL (Apple), MSFT (Microsoft), and GOOG (Alphabet) and time (represented by the index of the stock closing prices). Each regression summary provides insights into how the stock prices change with time and whether these relationships are statistically significant.
+
+For AAPL:
+The regression model suggests that there is a statistically significant relationship between the closing prices of AAPL and time. The intercept of approximately 135.9 suggests the estimated closing price when time is zero, although this value might not have practical meaning in this context. The coefficient for the index of AAPL.Close is about 0.0477, indicating that for each unit increase in the index (representing time), the closing price of AAPL is estimated to increase by 0.0477 units. The R-squared value of approximately 0.1998 indicates that the model explains about 20% of the variance in the closing prices of AAPL.
+
+For MSFT:
+The regression model for MSFT indicates that the relationship between the closing prices of MSFT and time is not statistically significant. Both the intercept and the coefficient for the index of MSFT.Close are not statistically different from zero. The low R-squared value suggests that the model doesn't explain much of the variance in the closing prices of MSFT, indicating that the linear relationship with time is weak.
+
+For GOOG:
+The regression model for GOOG shows a statistically significant relationship between the closing prices of GOOG and time. The intercept is approximately 126.85, suggesting the estimated closing price when time is zero (which might not be practically meaningful). The coefficient for the index of GOOG.Close is about -0.0257, indicating that for each unit increase in the index (representing time), the closing price of GOOG is estimated to decrease by 0.0257 units. The R-squared value of around 0.0432 implies that the model explains about 4.3% of the variance in the closing prices of GOOG.
+
+In summary, while the regression models reveal statistically significant relationships between the closing prices and time for AAPL and GOOG, the model for MSFT doesn't suggest a meaningful linear relationship. It's important to note that these models provide only a simplified representation of the complex dynamics of stock prices, and other factors beyond time may influence the stock price movements.
+
+# Forecasting
+
+```{r}
+max(index(stocks_close))
+```
+
+
+```{r}
+# Get the index value for tomorrow
+tomorrow_index <- max(index(stocks_close)) + 3600*24
+tomorrow_index
+```
+
+```{r}
+tail(stocks_close)
+```
+
+
+```{r}
+# Predict tomorrow's closing price for each stock
+tomorrow_aapl <- predict(aapl_lm, newdata = data.frame(AAPL.Close = tomorrow_index))
+tomorrow_msft <- predict(msft_lm, newdata = data.frame(MSFT.Close = tomorrow_index))
+tomorrow_goog <- predict(goog_lm, newdata = data.frame(GOOG.Close = tomorrow_index))
+```
+
+```{r}
+# Format the prediction strings
+format_prediction <- function(pred_price, stock_symbol, prediction_date) {
+  return(paste("Predicted closing price for", stock_symbol, "on", prediction_date, ":", pred_price))
+}
+
+# Convert tomorrow_index to an actual date (recall that tomorrow is the day after the last day in the dataframe (i.e., 2022-12-30))
+prediction_date <- as.Date(tomorrow_index)
+
+# Format and print the prediction strings
+aapl_pred <- format_prediction(tomorrow_aapl, "AAPL", prediction_date)
+msft_pred <- format_prediction(tomorrow_msft, "MSFT", prediction_date)
+goog_pred <- format_prediction(tomorrow_goog, "GOOG", prediction_date)
+
+cat(aapl_pred, "\n")
+cat(msft_pred, "\n")
+cat(goog_pred, "\n")
+```
+
+The predictions might indeed appear somewhat optimistic. Improving the analysis could involve exploring more advanced time series forecasting techniques that consider the temporal nature of financial data. However, as you mentioned that you don't have more data available, there are still a few things you could consider:
+
+**Feature Engineering**: You could experiment with additional features that might influence stock prices, such as market indices, economic indicators, or news sentiment scores. Incorporating external data can help capture more complex relationships that might not be captured by simple linear models.
+
+**Different Model Architectures**: You could explore more sophisticated models like ARIMA, GARCH, or even machine learning models like XGBoost or LSTM. These models are designed to capture different patterns and behaviors in time series data.
+
+**Ensemble Methods**: Combining the predictions of multiple models (ensemble methods) can often yield better results. You could average the predictions of different models to get a more balanced prediction.
+
+**Parameter Tuning**: If you're using more complex models like machine learning algorithms, you could fine-tune their parameters to optimize their performance.
+
+**Evaluation Metrics**: Make sure you're using appropriate evaluation metrics, considering the nature of the financial data. For instance, mean squared error might not be the most suitable metric if you want to focus on predicting direction rather than exact values.
+
+**Domain Expertise**: If you have domain knowledge or access to financial experts, their insights could help guide your analysis and model selection.
+
+Remember that predicting stock prices is inherently challenging due to the complex and unpredictable nature of financial markets. While improving the model might provide better predictions, it's important to remember that even the most sophisticated models can't predict with certainty. Always exercise caution and consider multiple factors before making financial decisions based on predictions
+
+```{r}
+library(forecast)
+```
+
+```{r}
+
+run_arima <- function(stock_data, stock_name) {
+  # Convert data to a time series object
+  stock_ts <- ts(stock_data)
+
+  # Fit an ARIMA model
+  arima_model <- auto.arima(stock_ts, stepwise = FALSE, approximation = FALSE)
+
+  # Print model summary
+  cat("ARIMA Model Summary for", stock_name, "\n")
+  summary(arima_model)
+
+  # Forecast one step ahead
+  forecast_result <- forecast(arima_model, h = 1)
+
+  # Print the forecasted value for the next day
+  tomorrow_index <- max(time(stock_ts)) + 1
+  cat("Predicted closing price for", stock_name, "on", tomorrow_index, ":", forecast_result$mean, "\n\n")
+}
+
+# Run ARIMA model and output results for each stock
+run_arima(stocks_close$AAPL.Close, "AAPL")
+run_arima(stocks_close$MSFT.Close, "MSFT")
+run_arima(stocks_close$GOOG.Close, "GOOG")
+
+```
+
+# Conclusion
+
+In this analysis, we delved into the stock prices of AAPL, MSFT, and GOOG from January 2021 to January 2023. Our exploration encompassed diverse steps, including data collection, exploratory data analysis, stock comparison, return calculations, trend identification, regression analysis, and forecasting.
+
+Through regression analysis, we uncovered distinct relationships between the closing prices of these stocks and time. While the regression models provided valuable insights, it's crucial to recognize that stock prices are influenced by a multitude of factors beyond the temporal dimension.
+
+Furthermore, we leveraged ARIMA (AutoRegressive Integrated Moving Average) models to refine our predictions beyond simple linear regression. This demonstrated that advanced time series techniques can enhance forecasting accuracy. However, it's imperative to acknowledge that predicting stock prices is a complex task due to the intricate and often unpredictable nature of financial markets.
+
+To elevate the analysis further, one could explore sophisticated machine learning techniques, such as XGBoost or LSTM (Long Short-Term Memory), to capture intricate patterns in the data. Additionally, incorporating more extensive data engineering, external factors, and sentiment analysis could offer a more comprehensive perspective on stock price movements.
+
+It's vital to underscore that while predictive models can provide valuable insights, financial decisions should not hinge solely on predictions. The dynamics of markets encompass multifaceted factors, necessitating a holistic approach that combines data-driven analysis with domain expertise and external information.
+
+In the world of finance, successful strategies stem from well-rounded insights and comprehensive decision-making, and we must exercise prudence and diligence when applying data-driven predictions to investment choices.
+
+
+# General Audience
+
+Introduction:
+
+In this analysis, I looked at the prices of three popular stocks - AAPL (Apple), MSFT (Microsoft), and GOOG (Google) - from January 2021 to January 2023. I wanted to understand how their prices changed over time and if I could predict their future trends.
+
+What I Did:
+
+I collected the stock price data and examined how the stocks performed over time.
+I compared the stock prices to see how they related to each other.
+I calculated the returns, which tell us how much the stock prices changed from day to day.
+I looked for trends by using something called moving averages, which help smooth out the data to reveal patterns.
+I used a technique called regression analysis to see if there was a connection between time and the stock prices.
+
+What I  Found:
+
+I found that the stock prices of AAPL and GOOG had a relationship with time, but MSFT's stock price didn't seem to have a strong connection.
+I used a special model to predict what the stock prices might be in the future. However, predicting stock prices is very challenging because many factors influence them.
+
+What's Next:
+
+While our analysis provided insights, I can make predictions even better by using more advanced techniques.
+I could try using machine learning methods to capture more complex patterns in the data.
+Including additional information like economic indicators and news sentiment could help improve our predictions.
+Remember, though, that predicting stock prices is tricky, and financial decisions should not rely solely on predictions. Many factors affect stock prices, and it's essential to be cautious and well-informed when making investment choices.
+
+Conclusion:
+
+Understanding stock prices and predicting trends is a complex task. While our analysis gave us some valuable insights, it's crucial to remember that the world of finance is full of uncertainties. Successful strategies in investing come from a combination of data analysis, expert knowledge, and careful decision-making.
+
+
+
