@@ -1,0 +1,113 @@
+---
+title: "Activity03"
+author: "Pep Canyadell"
+date: "8/9/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+# Install and load necessary packages
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+  install.packages("tidyverse")
+}
+
+if (!requireNamespace("tidymodels", quietly = TRUE)) {
+  install.packages("tidymodels")
+}
+
+if (!requireNamespace("GGally", quietly = TRUE)) {
+  install.packages("GGally")
+}
+
+library(tidyverse)
+library(tidymodels)
+library(GGally)
+
+
+
+```
+
+
+```{r}
+
+# Load the mtcars dataset
+data("mtcars")
+
+# Assign the dataset to a data frame
+df <- mtcars
+
+```
+
+
+```{r}
+
+# Create pairwise relationship plots using GGally
+df %>%
+  select(mpg, hp, wt) %>%
+  ggpairs()
+
+
+
+```
+
+```{r}
+
+# Fit a multiple linear regression model
+lm_spec <- linear_reg() %>%
+  set_mode("regression") %>%
+  set_engine("lm")
+
+mlr_mod <- lm_spec %>% 
+  fit(mpg ~ hp + wt, data = df)
+
+# Display model parameters
+tidy(mlr_mod)
+
+
+```
+
+```{r}
+
+# Create a 3-D scatterplot using ggplot2
+library(ggplot2)
+
+ggplot(df, aes(x = hp, y = wt, z = mpg)) +
+  geom_point() +
+  labs(x = "Horsepower", y = "Weight", z = "Miles Per Gallon") +
+  theme_minimal()
+
+
+```
+
+
+# Procedure:
+
+Task 1: Opened the RMarkdown document:
+
+I began by opening a special document in RStudio called "activity03.Rmd."
+
+Task 2: Loaded the necessary packages:
+
+I brought in some extra tools to help me work. It was like getting a toolkit ready. I checked if the tools were already there, and if not, I quickly installed and used them.
+
+Task 3: Loaded the data:
+
+I picked a collection of information about cars, like miles per gallon, horsepower, and weight. I named this collection "df."
+
+Task 4: Created pairwise relationships:
+
+I made pictures that showed how these car things were related to each other. For example, I showed how miles per gallon and horsepower were connected.
+
+Task 5: Fitted the multiple linear regression model:
+
+I used a special math trick to figure out if one thing could help predict another thing. It was like guessing if knowing the horsepower and weight of a car could help guess its miles per gallon.
+
+Challenge: Created 3-D plots:
+
+I drew a fancy picture with three axes. Imagine I had toy cars with numbers for how much horsepower, weight, and miles per gallon they had. I put the cars in this picture where each axis showed one of those numbers.
