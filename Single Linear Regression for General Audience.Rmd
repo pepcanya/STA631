@@ -1,0 +1,110 @@
+---
+title: "SLR for General Audience"
+author: "Pep Canyadell"
+date: "8/9/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+# Load necessary packages
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+  install.packages("tidyverse")
+}
+
+# Load the data
+data("iris")
+
+# Fit a simple linear regression model
+lm_model <- lm(Sepal.Length ~ Sepal.Width, data = iris)
+
+# Display model summary
+summary(lm_model)
+
+# Plot the regression line
+plot(iris$Sepal.Width, iris$Sepal.Length, main = "Simple Linear Regression", xlab = "Sepal Width", ylab = "Sepal Length")
+abline(lm_model, col = "red")
+
+
+
+```
+
+# lm() interpretation: 
+
+
+The results of the simple linear regression analysis on the iris dataset, predicting Sepal Length (Sepal.Length) based on Sepal Width (Sepal.Width), provide valuable insights. The intercept is estimated at 6.5262, and the sepal.width coefficient is -0.2234. This suggests that, on average, for each one-unit increase in sepal width, the predicted sepal length decreases by about 0.2234 units, while other variables remain constant. The t-values and standard errors highlight the intercept's significance, while the sepal.width coefficient's p-value (0.152) indicates it may not be a significant predictor. The residual standard error is 0.8251, reflecting the model's average prediction error. The R-squared values (0.01382 and adjusted 0.007159) indicate modest explanatory power, and the F-statistic's p-value (0.1519) suggests limited overall model significance. Consequently, additional variables or refinements may be needed to enhance the model's predictive capability.
+
+# Scatter Plot interpretation:
+
+When the scatter plot for simple linear regression displays widely scattered data points without a discernible pattern or clear line, it signifies a weak or absent linear relationship between the variables under study. This lack of coherence suggests that changes in the independent variable do not consistently correspond to predictable changes in the dependent variable. Consequently, the predictive power of the linear regression model is likely to be limited, resulting in a low coefficient of determination (R-squared) value, which indicates that only a small portion of the variation in the dependent variable can be explained by the model. The residuals, or the differences between observed and predicted values, will be dispersed randomly around zero, potentially reflecting heteroscedasticity, where variability in residuals varies across different values of the independent variable. Overall, such scatter plots with no apparent line suggest that the model may not be suitable for making reliable predictions or inferences about the dependent variable based solely on the independent variable.
+
+
+# Explanation of the Model to General Audience:
+
+Imagine you have a collection of information about different iris flowers. You want to figure out if you can predict the length of a flower's sepal (a part of the flower) based on how wide its sepal is. This is what the code is doing step by step:
+
+Load Necessary Packages: 
+
+This part makes sure you have a tool called "tidyverse" ready to use. It's like getting the right equipment before starting a task.
+
+Load the Data: 
+
+You bring in a dataset called "iris," which has information about different iris flowers, including their sepal length and width.
+
+Fit a Simple Linear Regression Model:
+This is like finding a simple rule that helps you predict sepal length based on sepal width. The lm() function does this. It tries to find the best line that fits the data points.
+
+Display Model Summary: 
+
+This part gives you a summary of the rule (model) you found. It tells you how strong the relationship is between sepal length and width, and how confident you can be in this rule.
+Plot the Regression Line: This step helps you visualize the rule you found. It makes a graph where each dot represents an iris flower. The x-axis shows sepal width, the y-axis shows sepal length. The red line on the graph is the rule you discovered. It shows how you can roughly guess the sepal length if you know the sepal width.
+
+By running this code, you're using math and data to understand how one characteristic of the iris flower (sepal width) might be connected to another (sepal length). If you change the code a bit, you can do similar investigations with different sets of data or different characteristics.
+
+# Interpreting the results for General Audience:
+
+Intercept and Sepal Width Coefficient: 
+
+We found two important numbers. The first is like a starting point for our math, and it's around 6.5. The second number, -0.2234, tells us that when the sepal gets wider by one unit, the sepal length becomes about 0.2234 units shorter, on average. But we only looked at sepal width; we didn't consider anything else.
+
+
+What about Uncertainty: 
+
+Some numbers are special to tell us if our math is good. The first one tells us if our starting point is important, and it seems it is. But the second number's p-value is 0.152, which suggests it might not be super important in predicting.
+
+
+Errors and Model's Strength: 
+
+We also found out that, on average, our math's predictions can be off by about 0.8251 units. So, it's not perfect. Two more numbers, R-squared and adjusted R-squared, tell us if our math explains things well. They're not too high, around 0.0138 and 0.0072, meaning our math doesn't explain everything.
+
+
+Model's Overall Usefulness: 
+Another number, F-statistic, tells us how useful our math is overall. Its p-value is 0.1519, suggesting our math might not be super helpful. This means we might need more information or better math to make better predictions.
+
+
+Understanding Scatter Plots:
+
+Picture a graph with dots that represent our flowers. If the dots are all over the place without any pattern or line, it means there's not much connection between sepal width and length.
+
+Weak Relationship: 
+
+This scattered mess means that when sepal width changes, sepal length doesn't always change in a predictable way. It's like the flowers are doing their own thing.
+
+
+Predictive Power: 
+
+When we use our math to predict sepal length, it might not work very well because the dots don't follow a clear line. Our math can't explain much of the difference in sepal lengths based only on sepal widths.
+
+Random Differences: 
+
+The differences between what our math predicts and what we actually see (residuals) are spread out randomly around zero. This randomness might suggest that the flowers' sepal lengths vary in a way that's not easy to predict.
+
+
+Reliability Concerns: 
+
+So, when we see this kind of scatter plot, it's a sign that our math might not be great for making strong predictions about sepal length based just on sepal width. We might need more information or a different approach to make better guesses.
+
