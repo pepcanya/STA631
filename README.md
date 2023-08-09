@@ -1,4 +1,5 @@
 NAME: Josep Canyadell
+
 Class: STA631
 
 ## PORFTOLIO DETAILS:
